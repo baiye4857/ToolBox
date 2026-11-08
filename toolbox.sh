@@ -12,7 +12,7 @@
 set -o pipefail
 
 # ------------------------- 全局配置（按需修改） -------------------------
-TB_VERSION="0.6.0"
+TB_VERSION="0.6.1"
 TB_CMD="tb"                                    # 安装后的命令名，可改成你自己的品牌名
 TB_RAW_URL="https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh"
 TB_MIRROR="${TB_MIRROR:-}"                     # 加速前缀，如 https://ghproxy.net/ ；留空直连
@@ -37943,6 +37943,24 @@ EOF
     done
 }
 
+# 本工具箱新增：下载完成后两次可见输入 root 密码并执行 InstallNET
+tb_lb_17_ask_and_run() {
+    local pwd1 pwd2
+    read -p "请输入新系统 root 密码: " pwd1 || exit 1
+    if [[ -z "$pwd1" ]]; then
+        echo -e "${RED}密码不能为空，已取消${RESET}"
+        exit 1
+    fi
+    read -p "再次输入 root 密码确认: " pwd2 || exit 1
+    if [[ "$pwd1" != "$pwd2" ]]; then
+        echo -e "${RED}两次输入不一致，已取消${RESET}"
+        exit 1
+    fi
+    # 注意：-pwd 参数会短暂出现在进程列表中，这是上游脚本固定接口
+    bash InstallNET.sh -debian 12 -pwd "$pwd1"
+    exit $?
+}
+
 tb_lb_17() {
             while true; do
                 echo
@@ -37953,13 +37971,19 @@ tb_lb_17() {
                 case $LeitboGi0roChoice in
                     1)
                         wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
-                        echo "使用 ' bash InstallNET.sh -debian 12 ' 即可开始DD Debian12系统"
-                        exit 0
+                        if [[ ! -s InstallNET.sh ]]; then
+                            echo -e "${RED}InstallNET.sh 下载失败，已取消${RESET}"
+                            exit 1
+                        fi
+                        tb_lb_17_ask_and_run
                         ;;
                     2)
                         wget --no-check-certificate -qO InstallNET.sh 'https://gitee.com/mb9e8j2/Tools/raw/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
-                        echo "使用 ' bash InstallNET.sh -debian 12 ' 即可开始DD Debian12系统"
-                        exit 0
+                        if [[ ! -s InstallNET.sh ]]; then
+                            echo -e "${RED}InstallNET.sh 下载失败，已取消${RESET}"
+                            exit 1
+                        fi
+                        tb_lb_17_ask_and_run
                         ;;
                     *)
                         echo -e "${RED}无效选项，请重新输入！${RESET}"

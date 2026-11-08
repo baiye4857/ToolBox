@@ -1,6 +1,6 @@
 # My Toolbox
 
-Debian/Ubuntu 单文件一键运维工具箱，仿照 kejilion.sh 的交互形态。系统工具 1–17 全部采用**逐字复制（verbatim vendoring）**：1–14 对应 kejilion v4.5.17 的全部函数与全局变量原样内嵌；15–17 对应 168.diy/linuxbox.sh 的菜单 0/5/92 分支体原样内嵌。两套库均在独立 bash 子进程中运行，不与本工具箱的函数/变量空间混用。
+Debian/Ubuntu 单文件一键运维工具箱，仿照 kejilion.sh 的交互形态。系统工具采用**逐字复制（verbatim vendoring）**：1–14 对应 kejilion v4.5.17 的全部函数与全局变量原样内嵌；15–16 对应 168.diy/linuxbox.sh 菜单 0/5 分支体原样内嵌，17 的下载部分逐字、密码与执行部分按本工具箱定制。两套库均在独立 bash 子进程中运行，不与本工具箱的函数/变量空间混用。
 
 ## 一键运行
 
@@ -108,7 +108,7 @@ my-toolbox/
 | 14 | 系统备份与恢复 | kejilion 34 `linux_backup` | **逐字复制** |
 | 15 | 基础环境安装 | linuxbox 0 | **逐字复制**：sudo apt 安装 sudo/curl/wget/tar/zip，并把 linuxbox.sh 下载到 /usr/bin/lb 与 /usr/bin/linuxbox |
 | 16 | 安装 GOST 环境 | linuxbox 5 | **逐字复制**：原版仅 amd64，下载 gost_2.12.0，写 forking 类型 systemd 单元与 start.sh（不自动启动） |
-| 17 | DD 重装系统 | linuxbox 92 | **逐字复制**：选择 GitHub/Gitee 下载 leitbogioro InstallNET.sh 后即退出，仅提示手动执行 `bash InstallNET.sh -debian 12`；不询问密码、不自动执行 |
+| 17 | DD 重装系统 | linuxbox 92 下载部分逐字 | 选择 GitHub/Gitee 下载 leitbogioro InstallNET.sh（下载失败即拦截）；随后终端**可见**输入两次新 root 密码，空密码或两次不一致均拦截，确认后执行 `bash InstallNET.sh -debian 12 -pwd 密码` |
 
 ### 未接入菜单 / 已替换
 
@@ -120,5 +120,5 @@ my-toolbox/
 ## 许可证与归属
 
 - 本项目代码：[Apache License 2.0](LICENSE)
-- 系统工具 1–14 为 kejilion/sh（Apache-2.0）v4.5.17 代码的逐字副本，15–17 为 168.diy/linuxbox.sh（许可证未声明）菜单 0/5/92 的逐字副本，库块与 [NOTICE](NOTICE) 中保留来源与版本署名；Apache-2.0 允许复制和再分发，但**不得移除版权、许可与来源声明**。
+- 系统工具 1–14 为 kejilion/sh（Apache-2.0）v4.5.17 代码的逐字副本，15–16 及 17 的下载部分为 168.diy/linuxbox.sh（许可证未声明）的逐字副本，库块与 [NOTICE](NOTICE) 中保留来源与版本署名；Apache-2.0 允许复制和再分发，但**不得移除版权、许可与来源声明**。
 - 运行时调用的第三方上游脚本各有自己的许可证，随功能上线在 NOTICE 中逐项登记。
