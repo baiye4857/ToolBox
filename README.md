@@ -106,7 +106,7 @@ my-toolbox/
 | 14 | 系统备份与恢复 | kejilion 34 `linux_backup` | tar.gz 备份到 /backups，恢复需二次确认 |
 | 15 | 基础环境安装 | linuxbox 0 | apt 安装 sudo/curl/wget/tar/zip/ca-certificates；原脚本自安装部分由 `tb install` 承担 |
 | 16 | 安装 GOST 环境 | linuxbox 5 | 架构自动识别（原版仅 amd64，现支持 amd64/armv8/armv7/386），systemd 单元改为 simple，配置占位不自动启动 |
-| 17 | DD 重装脚本下载 | linuxbox 92 | 下载 leitbogioro InstallNET（GitHub/Gitee）并校验 shebang，**只下载不执行**，重装命令由用户手动发起 |
+| 17 | DD 重装系统 | linuxbox 92 | 下载 leitbogioro InstallNET（GitHub/Gitee）并校验 shebang，终端输入两次新 root 密码（输入可见），确认后执行 `bash InstallNET.sh -debian 12 -pwd 密码` |
 
 ### 未搬运 / 已替换
 

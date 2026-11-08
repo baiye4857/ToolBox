@@ -1108,7 +1108,7 @@ EOF
 # -------------------------------------------------------------
 # 17. DD 重装脚本下载（LeitboGi0ro InstallNET）
 # 来源：基于 168.diy/linuxbox.sh 第 275–299 行“92) 使用 LeitboGi0ro DD”改写，
-#       只下载并校验脚本，不自动执行，重装命令由用户手动发起
+#       下载后由用户在终端输入新 root 密码，并执行 InstallNET 重装
 # -------------------------------------------------------------
 tb_feat_dd_leitbo() {
     tb_require_root || return 1
@@ -1126,7 +1126,7 @@ tb_feat_dd_leitbo() {
 
     mkdir -p /root/reinstall
     local target="/root/reinstall/InstallNET.sh"
-    tb_log "下载 InstallNET.sh（不执行）"
+    tb_log "下载 InstallNET.sh"
     if ! wget --no-check-certificate -qO "$target" "$url"; then
         tb_error "下载失败"; return 1
     fi
@@ -1136,9 +1136,20 @@ tb_feat_dd_leitbo() {
     fi
     chmod a+x "$target"
 
-    tb_warn "DD 会清空整块系统盘并重装，期间 SSH 会断开，错误配置可能导致失联，请先备份数据"
-    tb_ok "脚本已下载：$target"
-    tb_log "确认风险后，由你手动执行：bash $target -debian 12"
+    tb_warn "DD 会清空整块系统盘并重装为 Debian 12，期间 SSH 会断开，错误配置可能导致失联"
+    tb_warn "请先备份数据，并确认可通过云厂商 VNC/控制台救援"
+    tb_confirm "我已了解风险，继续重装流程？" || return 1
+
+    local pwd1 pwd2
+    read -r -p "请输入新系统 root 密码: " pwd1 || return 1
+    [[ -n "$pwd1" ]] || { tb_error "密码不能为空"; return 1; }
+    read -r -p "再次输入密码确认: " pwd2 || return 1
+    [[ "$pwd1" == "$pwd2" ]] || { tb_error "两次输入不一致"; return 1; }
+
+    tb_confirm "最后确认：立即开始 DD 重装 Debian 12？" || return 1
+    tb_log "开始执行重装，随后 SSH 会断开……"
+    # 注意：-pwd 参数会短暂出现在进程列表中，这是上游脚本固定接口
+    bash "$target" -debian 12 -pwd "$pwd1"
 }
 
 # -------------------------------------------------------------
@@ -1165,7 +1176,7 @@ tb_feat_settings_menu() {
         echo "14. 系统备份与恢复"
         echo "15. 基础环境安装"
         echo "16. 安装 GOST 环境"
-        echo "17. DD 重装脚本下载"
+        echo "17. DD 重装系统"
         echo "------------------------"
         echo " 0. 返回主菜单"
         echo "------------------------"
@@ -1313,7 +1324,7 @@ tb_help() {
     tune      内核参数优化         lang      系统语言
     ps1       命令行美化           backup    备份与恢复
     baseenv   基础环境安装         gost      安装 GOST
-    dd        DD 重装脚本下载
+    dd        DD 重装系统
   $TB_CMD update           从 GitHub 更新到最新版（启动交互菜单时也会自动检查）
   $TB_CMD advanced         高级功能菜单（更新/卸载）
   $TB_CMD uninstall        卸载 ToolBox
