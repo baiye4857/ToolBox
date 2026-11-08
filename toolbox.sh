@@ -14,7 +14,7 @@ set -o pipefail
 # ------------------------- 全局配置（按需修改） -------------------------
 TB_VERSION="0.3.0"
 TB_CMD="tb"                                    # 安装后的命令名，可改成你自己的品牌名
-TB_RAW_URL="https://raw.githubusercontent.com/CHANGE_ME/CHANGE_ME/main/toolbox.sh"
+TB_RAW_URL="https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh"
 TB_MIRROR="${TB_MIRROR:-}"                     # 加速前缀，如 https://ghproxy.net/ ；留空直连
 
 # ------------------------- 颜色（非终端自动降级） -------------------------
