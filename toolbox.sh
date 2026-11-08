@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================
 #  My Toolbox —— Debian/Ubuntu 一键工具箱（单文件）
-#  版本: 0.3.0
+#  版本: 0.3.1
 #  许可: Apache-2.0
 #  一键运行:
 #    bash <(curl -sL https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh)
