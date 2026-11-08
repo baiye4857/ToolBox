@@ -12,7 +12,7 @@
 set -o pipefail
 
 # ------------------------- 全局配置（按需修改） -------------------------
-TB_VERSION="0.5.0"
+TB_VERSION="0.6.0"
 TB_CMD="tb"                                    # 安装后的命令名，可改成你自己的品牌名
 TB_RAW_URL="https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh"
 TB_MIRROR="${TB_MIRROR:-}"                     # 加速前缀，如 https://ghproxy.net/ ；留空直连
@@ -37509,140 +37509,480 @@ tb_kj() {
     bash "$(tb_kjlib_path)" "$@"
 }
 
-# -------------------------------------------------------------
-# 15. 基础环境安装
-# 来源：基于 168.diy/linuxbox.sh（未声明许可证，https://168.diy/linuxbox.sh）
-#       第 30–37 行“0) 安装环境”改写；原脚本自安装部分由 tb install 承担
-# -------------------------------------------------------------
-tb_feat_base_env() {
-    tb_require_root || return 1
-    tb_log "安装基础工具：sudo curl wget tar zip ca-certificates"
-    tb_pkg_install sudo curl wget tar zip ca-certificates || return 1
-    tb_ok "基础环境已就绪"
+# =============================================================
+#  168.diy/linuxbox.sh 逐字运行库（vendored verbatim，许可证未声明）
+#  完整源脚本释放为 linuxbox-lib.sh 留存；实际执行走 linuxbox-bridge.sh，
+#  桥接在独立 bash 子进程中运行，不污染本工具箱的函数与变量空间
+# =============================================================
+
+TB_LB_PIN="168.diy-linuxbox"
+
+tb_lblib_path() {
+    if [[ "$EUID" -eq 0 ]]; then
+        echo "/usr/local/share/tb/linuxbox-lib.sh"
+    else
+        echo "$HOME/.cache/tb/linuxbox-lib.sh"
+    fi
 }
 
-# -------------------------------------------------------------
-# 16. 安装 GOST 环境
-# 来源：基于 168.diy/linuxbox.sh 第 59–117 行“5) 安装 GOST 环境”改写，
-#       增加架构自动识别（原版仅 amd64），systemd 单元改为 simple 类型
-# -------------------------------------------------------------
-tb_feat_gost() {
-    tb_require_root || return 1
-    tb_pkg_install curl tar ca-certificates || return 1
-
-    local arch
-    case "$(uname -m)" in
-        x86_64)    arch="amd64" ;;
-        aarch64)   arch="armv8" ;;
-        armv7l)    arch="armv7" ;;
-        i386|i686) arch="386" ;;
-        *) tb_error "暂不支持的架构: $(uname -m)"; return 1 ;;
-    esac
-
-    echo "1) GitHub 官方源"
-    echo "2) 168.diy 自建源（仅 amd64）"
-    read -r -p "请选择下载源 [1-2]: " src_choice || return 1
-
-    local url
-    case "$src_choice" in
-        1) url="https://github.com/ginuerzh/gost/releases/download/v2.12.0/gost_2.12.0_linux_${arch}.tar.gz" ;;
-        2)
-            [[ "$arch" == "amd64" ]] || { tb_error "自建源仅提供 amd64"; return 1; }
-            url="https://168.diy/gost_2.12.0_linux_amd64.tar.gz"
-            ;;
-        *) tb_error "无效选项，取消安装"; return 1 ;;
-    esac
-
-    mkdir -p /root/gost
-    local tmp
-    tmp="$(mktemp)" || return 1
-    tb_log "下载 GOST: $url"
-    if ! curl -fsSL --max-time 120 -o "$tmp" "$url"; then
-        tb_error "下载失败"; rm -f "$tmp"; return 1
+tb_lbbridge_path() {
+    if [[ "$EUID" -eq 0 ]]; then
+        echo "/usr/local/share/tb/linuxbox-bridge.sh"
+    else
+        echo "$HOME/.cache/tb/linuxbox-bridge.sh"
     fi
-    tar -xzf "$tmp" -C /root/gost
-    rm -f "$tmp"
-    chmod +x /root/gost/gost
+}
 
-    cat > /lib/systemd/system/gost.service <<'EOF'
+tb_ensure_lblib() {
+    local lib target tmp
+    lib="$(tb_lblib_path)"
+    target="$(tb_lbbridge_path)"
+    if [[ -s "$lib" && -s "$target" ]] && grep -q "TB_LB_PIN=$TB_LB_PIN" "$target" 2>/dev/null; then
+        return 0
+    fi
+    mkdir -p "$(dirname "$lib")" || return 1
+
+    # --- 完整 linuxbox.sh 逐字副本（不执行，仅留存）---
+    tmp="$lib.tmp.$$"
+    cat > "$tmp" <<'TB_LB_LIB_EOF_7c2d'
+#!/bin/bash
+
+# 定义颜色
+GREEN="\033[32m"
+YELLOW="\033[33m"
+RED="\033[31m"
+RESET="\033[0m"
+
+while true; do
+    clear
+    echo -e "${GREEN}===== 工具菜单 =====${RESET}"
+    echo "0) 安装环境 (curl, wget, sudo,zip)"
+    echo "1) MTProto 一键安装"
+    echo "2) 切换到 root 用户"
+    echo "3) 安装 BBRPlus"
+    echo "4) 国内三网测速"
+    echo "5) 安装 GOST 环境"
+    echo "6) 配置 GOST 服务出口端"
+    echo "7) 查看 GOST 状态"
+    echo "8) 网络质量体检"
+    echo "9) 配置mtg"
+    echo "90) 使用MoeClub DD Debian 12"
+    echo "91) 使用QiuSh DD Debian 12"
+    echo "92) 使用LeitboGi0ro DD Debian 12"
+    echo "99) 退出"
+    echo
+    read -p "请输入选项 : " choice
+
+    case $choice in
+        0)
+            echo -e "${YELLOW}正在安装环境...${RESET}"
+            sudo apt update -y
+            sudo apt install -y sudo curl wget tar zip
+            curl -o /usr/bin/lb https://168.diy/linuxbox.sh -s && chmod +x /usr/bin/lb
+            curl -o /usr/bin/linuxbox https://168.diy/linuxbox.sh -s && chmod +x /usr/bin/linuxbox
+            echo -e "${GREEN}环境安装完成！输入lb或linuxbox调出命令！${RESET}"
+            ;;
+
+        1)
+            echo -e "${YELLOW}正在安装 MTProto...${RESET}"
+            bash <(curl -sL https://storage.googleapis.com/tiziblog/mt_setup.sh)
+            ;;
+
+        2)
+            echo -e "${YELLOW}正在切换到 root 用户...${RESET}"
+            sudo -i
+            ;;
+
+        3)
+            echo -e "${YELLOW}正在安装 BBRPlus...${RESET}"
+            bash <(curl -Lso- https://raw.githubusercontent.com/jinwyp/one_click_script/master/install_kernel.sh)
+            ;;
+
+        4)
+            echo -e "${YELLOW}正在运行国内三网测速...${RESET}"
+            bash <(curl -Ls Check.Place) -N
+            ;;
+
+        5)
+            echo -e "${YELLOW}正在下载并安装 GOST 环境...${RESET}"
+            mkdir -p /root/gost && cd /root/gost || exit 1
+
+            echo "请选择下载源："
+            echo "1) GitHub 官方"
+            echo "2) 自建节点"
+            read -p "请输入选项 [1-2]: " src_choice
+
+            case $src_choice in
+                1)
+                    url="https://github.com/ginuerzh/gost/releases/download/v2.12.0/gost_2.12.0_linux_amd64.tar.gz"
+                    ;;
+                2)
+                    url="https://168.diy/gost_2.12.0_linux_amd64.tar.gz"
+                    ;;
+                *)
+                    echo -e "${RED}无效选项，取消安装${RESET}"
+                    continue
+                    ;;
+            esac
+            wget -O gost.tar.gz "$url"
+            tar -xzf gost.tar.gz
+            rm -f gost.tar.gz
+            chmod +x gost
+            # 只保留 gost 文件
+            find . ! -name 'gost' -type f -delete
+
+            # 写 systemd 服务
+            cat >/lib/systemd/system/gost.service <<EOF
 [Unit]
 Description=GOST Service
 After=network.target
 
 [Service]
-Type=simple
+Type=forking
 User=root
+Group=root
 WorkingDirectory=/root/gost
-ExecStart=/root/gost/gost -C /root/gost/config.json
-Restart=on-failure
+KillMode=control-group
+Restart=no
+ExecStart=/root/gost/start.sh
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-    # 占位配置，用户后续自行编辑 ServeNodes
-    if [[ ! -f /root/gost/config.json ]]; then
-        cat > /root/gost/config.json <<'EOF'
-{
-    "Debug": false,
-    "Retries": 0,
-    "ServeNodes": []
-}
+            # 写启动脚本
+            cat >/root/gost/start.sh <<EOF
+#!/bin/bash
+nohup ./gost -C config.json > /dev/null 2>&1 &
 EOF
-    fi
 
-    systemctl daemon-reload
-    tb_ok "GOST 安装完成：/root/gost/gost"
-    /root/gost/gost -V 2>&1
-    tb_warn "config.json 为空占位，配置好节点后再执行：systemctl enable --now gost"
-}
+            chmod +x -R /root/gost
 
-# -------------------------------------------------------------
-# 17. DD 重装脚本下载（LeitboGi0ro InstallNET）
-# 来源：基于 168.diy/linuxbox.sh 第 275–299 行“92) 使用 LeitboGi0ro DD”改写，
-#       下载后由用户在终端输入新 root 密码，并执行 InstallNET 重装
-# -------------------------------------------------------------
-tb_feat_dd_leitbo() {
-    tb_require_root || return 1
-    tb_pkg_install wget ca-certificates || return 1
+            echo -e "${GREEN}GOST 安装完成，路径：/root/gost/gost${RESET}"
+            echo "版本信息："
+            /root/gost/gost -V
+            ;;
 
-    local url
-    echo "1) GitHub 仓库"
-    echo "2) Gitee 仓库（国内备用）"
-    read -r -p "请选择 [1-2]: " c || return 1
-    case "$c" in
-        1) url="https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh" ;;
-        2) url="https://gitee.com/mb9e8j2/Tools/raw/master/Linux_reinstall/InstallNET.sh" ;;
-        *) tb_error "无效选项"; return 1 ;;
+        6)
+            echo -e "${YELLOW}配置 GOST 服务出口端...${RESET}"
+            mkdir -p /root/gost
+            nodes=()  # 用数组保存多个节点
+
+            while true; do
+                echo
+                echo "请选择协议类型（输入 done 完成配置）："
+                echo "1) relay+wss"
+                echo "2) socks5"
+                echo "3) http"
+                echo "4) ss/ssu"
+                echo "done) 完成配置并生成文件"
+                read -p "请输入选项 [1-4/done]: " proto_choice
+
+                case $proto_choice in
+                    1)
+                        read -p "请输入用户名: " user
+                        read -p "请输入密码: " pass
+                        read -p "请输入监听端口 (默认2053): " port
+                        port=${port:-2053}
+                        nodes+=("relay+wss://$user:$pass@:$port")
+                        ;;
+                    2)
+                        read -p "请输入用户名: " user
+                        read -p "请输入密码: " pass
+                        read -p "请输入监听端口 (默认1080): " port
+                        port=${port:-1080}
+                        nodes+=("socks5://$user:$pass@:$port")
+                        ;;
+                    3)
+                        read -p "请输入用户名: " user
+                        read -p "请输入密码: " pass
+                        read -p "请输入监听端口 (默认8080): " port
+                        port=${port:-8080}
+                        nodes+=("http://$user:$pass@:$port")
+                        ;;
+                    4)
+                        read -p "请输入加密方式 (默认CHACHA20_POLY1305): " method
+                        method=${method:-AEAD_CHACHA20_POLY1305}
+                        read -p "请输入密码: " pass
+                        read -p "请输入监听端口 (默认13456): " port
+                        port=${port:-13456}
+                        nodes+=("ss://$method:$pass@:$port")
+                        nodes+=("ssu://$method:$pass@:$port")
+                        ;;
+                    done|DONE|Done)
+                        break
+                        ;;
+                    *)
+                        echo -e "${RED}无效选项，请重新输入！${RESET}"
+                        ;;
+                esac
+            done
+
+            # 写配置文件
+            {
+                echo "{"
+                echo '    "Debug": false,'
+                echo '    "Retries": 0,'
+                echo '    "ServeNodes": ['
+                for i in "${!nodes[@]}"; do
+                    if [ $i -lt $((${#nodes[@]}-1)) ]; then
+                        echo "        \"${nodes[$i]}\","
+                    else
+                        echo "        \"${nodes[$i]}\""
+                    fi
+                done
+                echo "    ]"
+                echo "}"
+            } >/root/gost/config.json
+
+            echo -e "${GREEN}配置文件已生成：/root/gost/config.json${RESET}"
+            cat /root/gost/config.json
+
+            echo -e "${YELLOW}正在重启 GOST 服务...${RESET}"
+            systemctl daemon-reload
+            systemctl restart gost
+            systemctl enable gost
+            echo -e "${GREEN}GOST 已启动并设置为开机自启${RESET}"
+            systemctl status gost
+            ;;
+
+        7)
+            systemctl status gost
+            ;;
+
+        8)
+            bash <(curl -Ls Check.Place) -N
+            ;;
+            
+        9)
+            wget https://github.com/9seconds/mtg/releases/download/v2.1.7/mtg-2.1.7-linux-amd64.tar.gz
+            tar -xzf mtg-2.1.7-linux-amd64.tar.gz
+            rm mtg-2.1.7-linux-amd64.tar.gz
+            rm -rf mtg
+            mv mtg-2.1.7-linux-amd64 mtg
+            cd mtg
+            find . ! -name 'mtg' -type f -delete
+            chmod +x mtg 
+            secret=$(./mtg generate-secret --hex google.com)
+            echo "$secret"
+                read -p "请输入mtproto端口 : " mtprotoport
+
+            # 写启动脚本
+            cat >/root/mtg/start.sh <<EOF
+#!/bin/bash
+./mtg simple-run 0.0.0.0:$mtprotoport "$secret" --doh-ip=1.1.1.1 -d >/dev/null 2>&1 &
+EOF
+
+            chmod +x /root/mtg/start.sh
+
+#写入服务
+            cat >/lib/systemd/system/mtg.service <<EOF
+[Unit]   
+Description=mtg
+After=network.target
+
+[Service] 
+Type=forking
+User=root
+Group=root
+WorkingDirectory=/root/mtg
+KillMode=control-group
+Restart=no
+ExecStart=/root/mtg/start.sh
+   
+[Install]   
+WantedBy=multi-user.target
+EOF
+
+            echo -e "${YELLOW}正在重启 mtg 服务...${RESET}"
+            systemctl daemon-reload
+            systemctl restart mtg
+            systemctl enable mtg
+            echo -e "${GREEN}mtg 已启动并设置为开机自启${RESET}"
+            systemctl status mtg
+
+
+#获取当前ip
+            ThisIP=$(curl ip.sb -4 )
+            echo -e "${GREEN}一键链接: https://t.me/proxy?server=$ThisIP&port=$mtprotoport&secret=$secret ${RESET}"
+            echo -e "${GREEN}TG一键链接: tg://proxy?server=$ThisIP&port=$mtprotoport&secret=$secret ${RESET}"
+            echo "TG一键链接: https://t.me/proxy?server=$ThisIP&port=$mtprotoport&secret=$secret" > /root/mtg/link.txt
+            echo "TG一键链接: tg://proxy?server=$ThisIP&port=$mtprotoport&secret=$secret" >> /root/mtg/link.txt
+            echo "链接保存在 /root/mtg/link.txt"
+            ;;
+
+        90)
+            bash <(wget --no-check-certificate -qO- 'https://raw.githubusercontent.com/MoeClub/Note/master/InstallNET.sh') -d 12 -v 64 -p "L75K7CB74R8JtEfW3uQv" -port "22"
+            ;;
+
+        91)
+            bash <(wget --no-check-certificate -qO- 'qiu.sh/dd') -d 12 -v 64 -p B4h0Cnmy2wbvdDmDMJPv -port 22
+            ;;
+            
+        92)
+            
+            while true; do
+                echo
+                echo "1) Github仓库"
+                echo "2) Gitee仓库"
+                read -p "请输入选项 [1-2]: " LeitboGi0roChoice
+
+                case $LeitboGi0roChoice in
+                    1)
+                        wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
+                        echo "使用 ' bash InstallNET.sh -debian 12 ' 即可开始DD Debian12系统"
+                        exit 0
+                        ;;
+                    2)
+                        wget --no-check-certificate -qO InstallNET.sh 'https://gitee.com/mb9e8j2/Tools/raw/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
+                        echo "使用 ' bash InstallNET.sh -debian 12 ' 即可开始DD Debian12系统"
+                        exit 0
+                        ;;
+                    *)
+                        echo -e "${RED}无效选项，请重新输入！${RESET}"
+                        ;;
+                esac
+            done
+            ;;
+            
+        99)
+            echo -e "${RED}已退出菜单。${RESET}"
+            exit 0
+            ;;
+
+        *)
+            echo -e "${RED}无效选项，请重新输入！${RESET}"
+            ;;
     esac
 
-    mkdir -p /root/reinstall
-    local target="/root/reinstall/InstallNET.sh"
-    tb_log "下载 InstallNET.sh"
-    if ! wget --no-check-certificate -qO "$target" "$url"; then
-        tb_error "下载失败"; return 1
-    fi
-    if [[ ! -s "$target" ]] || ! head -1 "$target" | grep -q '^#!'; then
-        tb_error "内容校验失败（要求非空且首行为 shebang）"
-        rm -f "$target"; return 1
-    fi
-    chmod a+x "$target"
+    echo
+    read -p "按 Enter 键返回菜单..."
+done
+TB_LB_LIB_EOF_7c2d
+    mv -f "$tmp" "$lib"
 
-    tb_warn "DD 会清空整块系统盘并重装为 Debian 12，期间 SSH 会断开，错误配置可能导致失联"
-    tb_warn "请先备份数据，并确认可通过云厂商 VNC/控制台救援"
-    tb_confirm "我已了解风险，继续重装流程？" || return 1
+    # --- 桥接层：分支体逐字复制 + 入口分发 ---
+    tmp="$target.tmp.$$"
+    cat > "$tmp" <<'TB_LB_BRIDGE_EOF_7c2d'
+#!/bin/bash
+# TB_LB_PIN=168.diy-linuxbox
+# 来源：168.diy/linuxbox.sh（https://168.diy/linuxbox.sh，许可证未声明）
+# 下列三个包装函数内的分支体与源脚本逐字一致；仅函数外壳与分发为本工具箱新增。
 
-    local pwd1 pwd2
-    read -r -p "请输入新系统 root 密码: " pwd1 || return 1
-    [[ -n "$pwd1" ]] || { tb_error "密码不能为空"; return 1; }
-    read -r -p "再次输入密码确认: " pwd2 || return 1
-    [[ "$pwd1" == "$pwd2" ]] || { tb_error "两次输入不一致"; return 1; }
-
-    tb_confirm "最后确认：立即开始 DD 重装 Debian 12？" || return 1
-    tb_log "开始执行重装，随后 SSH 会断开……"
-    # 注意：-pwd 参数会短暂出现在进程列表中，这是上游脚本固定接口
-    bash "$target" -debian 12 -pwd "$pwd1"
+tb_lb_15() {
+            echo -e "${YELLOW}正在安装环境...${RESET}"
+            sudo apt update -y
+            sudo apt install -y sudo curl wget tar zip
+            curl -o /usr/bin/lb https://168.diy/linuxbox.sh -s && chmod +x /usr/bin/lb
+            curl -o /usr/bin/linuxbox https://168.diy/linuxbox.sh -s && chmod +x /usr/bin/linuxbox
+            echo -e "${GREEN}环境安装完成！输入lb或linuxbox调出命令！${RESET}"
 }
+
+tb_lb_16() {
+    # 脚手架：原分支 *) 中的 continue 指向源脚本主菜单循环；
+    # 这里用一次性 while 承接（无效源选择时重新询问下载源），分支体本身未改。
+    while true; do
+            echo -e "${YELLOW}正在下载并安装 GOST 环境...${RESET}"
+            mkdir -p /root/gost && cd /root/gost || exit 1
+
+            echo "请选择下载源："
+            echo "1) GitHub 官方"
+            echo "2) 自建节点"
+            read -p "请输入选项 [1-2]: " src_choice
+
+            case $src_choice in
+                1)
+                    url="https://github.com/ginuerzh/gost/releases/download/v2.12.0/gost_2.12.0_linux_amd64.tar.gz"
+                    ;;
+                2)
+                    url="https://168.diy/gost_2.12.0_linux_amd64.tar.gz"
+                    ;;
+                *)
+                    echo -e "${RED}无效选项，取消安装${RESET}"
+                    continue
+                    ;;
+            esac
+            wget -O gost.tar.gz "$url"
+            tar -xzf gost.tar.gz
+            rm -f gost.tar.gz
+            chmod +x gost
+            # 只保留 gost 文件
+            find . ! -name 'gost' -type f -delete
+
+            # 写 systemd 服务
+            cat >/lib/systemd/system/gost.service <<EOF
+[Unit]
+Description=GOST Service
+After=network.target
+
+[Service]
+Type=forking
+User=root
+Group=root
+WorkingDirectory=/root/gost
+KillMode=control-group
+Restart=no
+ExecStart=/root/gost/start.sh
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+            # 写启动脚本
+            cat >/root/gost/start.sh <<EOF
+#!/bin/bash
+nohup ./gost -C config.json > /dev/null 2>&1 &
+EOF
+
+            chmod +x -R /root/gost
+
+            echo -e "${GREEN}GOST 安装完成，路径：/root/gost/gost${RESET}"
+            echo "版本信息："
+            /root/gost/gost -V
+        break
+    done
+}
+
+tb_lb_17() {
+            while true; do
+                echo
+                echo "1) Github仓库"
+                echo "2) Gitee仓库"
+                read -p "请输入选项 [1-2]: " LeitboGi0roChoice
+
+                case $LeitboGi0roChoice in
+                    1)
+                        wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
+                        echo "使用 ' bash InstallNET.sh -debian 12 ' 即可开始DD Debian12系统"
+                        exit 0
+                        ;;
+                    2)
+                        wget --no-check-certificate -qO InstallNET.sh 'https://gitee.com/mb9e8j2/Tools/raw/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
+                        echo "使用 ' bash InstallNET.sh -debian 12 ' 即可开始DD Debian12系统"
+                        exit 0
+                        ;;
+                    *)
+                        echo -e "${RED}无效选项，请重新输入！${RESET}"
+                        ;;
+                esac
+            done
+}
+
+case "$1" in
+    15) tb_lb_15 ;;
+    16) tb_lb_16 ;;
+    17) tb_lb_17 ;;
+    *) echo "未知 linuxbox 入口: $1" >&2; exit 2 ;;
+esac
+TB_LB_BRIDGE_EOF_7c2d
+    mv -f "$tmp" "$target"
+}
+
+tb_lb() {
+    tb_ensure_lblib || { tb_error "linuxbox 运行库准备失败"; return 1; }
+    bash "$(tb_lbbridge_path)" "$@"
+}
+
 
 # -------------------------------------------------------------
 # 系统工具总菜单
@@ -37688,9 +38028,9 @@ tb_feat_settings_menu() {
             12) tb_kj 12 ;;
             13) tb_kj 13 ;;
             14) tb_kj 14 ;;
-            15) tb_feat_base_env ;;
-            16) tb_feat_gost ;;
-            17) tb_feat_dd_leitbo ;;
+            15) tb_lb 15 ;;
+            16) tb_lb 16 ;;
+            17) tb_lb 17 ;;
             0)  return 0 ;;
             *)  tb_warn "无效输入"; sleep 1 ;;
         esac
@@ -37864,9 +38204,9 @@ tb_cli_dispatch() {
         lang|语言)            tb_kj 12 ;;
         ps1|美化)             tb_kj 13 ;;
         backup|备份)          tb_kj 14 ;;
-        baseenv|基础环境)     tb_feat_base_env ;;
-        gost)                 tb_feat_gost ;;
-        dd|reinstall|重装)    tb_feat_dd_leitbo ;;
+        baseenv|基础环境)     tb_lb 15 ;;
+        gost)                 tb_lb 16 ;;
+        dd|reinstall|重装)    tb_lb 17 ;;
         install|安装)         tb_self_install ;;
         update|更新)          tb_self_update ;;
         advanced|高级)        tb_feat_advanced_menu ;;

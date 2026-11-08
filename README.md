@@ -1,6 +1,6 @@
 # My Toolbox
 
-Debian/Ubuntu 单文件一键运维工具箱，仿照 kejilion.sh 的交互形态。系统工具 1–14 对应的 kejilion 功能**逐字复制（verbatim vendoring）**：kejilion v4.5.17 的全部函数与全局变量原样内嵌，在独立 bash 子进程中运行，不与本工具箱的函数/变量空间混用；15–17 为薄封装实现。
+Debian/Ubuntu 单文件一键运维工具箱，仿照 kejilion.sh 的交互形态。系统工具 1–17 全部采用**逐字复制（verbatim vendoring）**：1–14 对应 kejilion v4.5.17 的全部函数与全局变量原样内嵌；15–17 对应 168.diy/linuxbox.sh 的菜单 0/5/92 分支体原样内嵌。两套库均在独立 bash 子进程中运行，不与本工具箱的函数/变量空间混用。
 
 ## 一键运行
 
@@ -63,7 +63,7 @@ my-toolbox/
    #       cn/kejilion.sh Lxxxx–Lxxxx 改写，版权归原项目所有
    ```
 3. 在 `tb_main_menu` 的 `case` 注册菜单编号，在 `tb_cli_dispatch` 注册命令（支持中文别名）。
-4. 系统工具 1–14 采用**逐字库**方式：kejilion 全部代码原样内嵌于 `tb_ensure_kjlib` 的 heredoc，首次使用时释放到 `/usr/local/share/tb/kejilion-lib.sh`（root）或 `~/.cache/tb/kejilion-lib.sh`（非 root），由 `tb_kj` 在独立子进程调用；逐字库内的 `send_stats`、chattr 锁定、防火墙包卸载等均保持 kejilion 原始行为。
+4. 系统工具采用**逐字库**方式：kejilion 全部代码原样内嵌于 `tb_ensure_kjlib`，linuxbox 完整源与桥接内嵌于 `tb_ensure_lblib`；首次使用时释放到 `/usr/local/share/tb/`（root）或 `~/.cache/tb/`（非 root），分别由 `tb_kj`、`tb_lb` 在独立子进程调用。逐字库内的 `send_stats`、chattr 锁定、防火墙包卸载、自安装命令等均保持上游原始行为。
 5. 若功能本质是调用上游脚本（如 bench.sh、WARP、重装脚本），优先自己写薄封装指向官方上游，并在 NOTICE 登记上游许可证。
 6. 测试建议：新开一台一次性 VPS 或用云厂商快照，验证菜单路径与失败回滚。
 
@@ -106,9 +106,9 @@ my-toolbox/
 | 12 | 切换系统语言 | kejilion 31 `linux_language` | **逐字复制** |
 | 13 | 命令行美化工具 | kejilion 32 `shell_bianse` | **逐字复制** |
 | 14 | 系统备份与恢复 | kejilion 34 `linux_backup` | **逐字复制** |
-| 15 | 基础环境安装 | linuxbox 0 | apt 安装 sudo/curl/wget/tar/zip/ca-certificates；原脚本自安装部分由 `tb install` 承担 |
-| 16 | 安装 GOST 环境 | linuxbox 5 | 架构自动识别（原版仅 amd64，现支持 amd64/armv8/armv7/386），systemd 单元改为 simple，配置占位不自动启动 |
-| 17 | DD 重装系统 | linuxbox 92 | 下载 leitbogioro InstallNET（GitHub/Gitee）并校验 shebang，终端输入两次新 root 密码（输入可见），确认后执行 `bash InstallNET.sh -debian 12 -pwd 密码` |
+| 15 | 基础环境安装 | linuxbox 0 | **逐字复制**：sudo apt 安装 sudo/curl/wget/tar/zip，并把 linuxbox.sh 下载到 /usr/bin/lb 与 /usr/bin/linuxbox |
+| 16 | 安装 GOST 环境 | linuxbox 5 | **逐字复制**：原版仅 amd64，下载 gost_2.12.0，写 forking 类型 systemd 单元与 start.sh（不自动启动） |
+| 17 | DD 重装系统 | linuxbox 92 | **逐字复制**：选择 GitHub/Gitee 下载 leitbogioro InstallNET.sh 后即退出，仅提示手动执行 `bash InstallNET.sh -debian 12`；不询问密码、不自动执行 |
 
 ### 未接入菜单 / 已替换
 
@@ -120,5 +120,5 @@ my-toolbox/
 ## 许可证与归属
 
 - 本项目代码：[Apache License 2.0](LICENSE)
-- 系统工具 1–14 为 kejilion/sh（Apache-2.0）v4.5.17 代码的逐字副本，库块与 [NOTICE](NOTICE) 中保留来源与版本署名；Apache-2.0 允许复制和再分发，但**不得移除版权、许可与来源声明**。
+- 系统工具 1–14 为 kejilion/sh（Apache-2.0）v4.5.17 代码的逐字副本，15–17 为 168.diy/linuxbox.sh（许可证未声明）菜单 0/5/92 的逐字副本，库块与 [NOTICE](NOTICE) 中保留来源与版本署名；Apache-2.0 允许复制和再分发，但**不得移除版权、许可与来源声明**。
 - 运行时调用的第三方上游脚本各有自己的许可证，随功能上线在 NOTICE 中逐项登记。

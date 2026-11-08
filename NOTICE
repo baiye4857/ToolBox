@@ -99,8 +99,11 @@ its own license; check the upstream repository for details. Projects marked
 18. 168.diy linuxbox.sh
     https://168.diy/linuxbox.sh
     License: not declared (the script ships without a license file)
-    System-tools items 15, 16 and 17 are derived from its menu items 0, 5 and 92;
-    source line ranges are marked inline in toolbox.sh.
+    Vendored verbatim: the complete linuxbox.sh is embedded byte-identical
+    in toolbox.sh (tb_ensure_lblib) and released as linuxbox-lib.sh; a
+    bridge (linuxbox-bridge.sh) reproduces the menu 0, 5 and 92 branch
+    bodies byte-identically and dispatches system-tools items 15, 16 and 17
+    in a separate bash child process.
 
 19. GOST (ginuerzh)
     https://github.com/ginuerzh/gost
@@ -125,4 +128,5 @@ its own license; check the upstream repository for details. Projects marked
 Installed through the system package manager (apt), not fetched at runtime:
 fail2ban (GPL-2.0), locales, tar, iproute2, openssh-server/client, ufw.
 The verbatim kejilion library may additionally install packages via its
-own apt wrappers when menu items 1-14 are used.
+own apt wrappers when menu items 1-14 are used; the verbatim linuxbox
+bridge installs sudo/curl/wget/tar/zip via apt when item 15 is used.
