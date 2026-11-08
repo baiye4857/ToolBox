@@ -1,0 +1,114 @@
+My Toolbox
+Copyright 2026
+
+This product includes software developed by the My Toolbox project.
+
+This product includes code derived from:
+
+1. kejilion/sh
+   https://github.com/kejilion/sh
+   License: Apache License 2.0
+   Ported functions are marked inline in toolbox.sh with source file and
+   line-range comments; copyright remains with the original project.
+
+Runtime dependencies (third-party scripts fetched and executed on demand
+through the "测试脚本合集" and "切换更新源" features). Each project keeps
+its own license; check the upstream repository for details. Projects marked
+"license not declared" ship scripts without an explicit license file.
+
+2. OpenAI-Checker (missuo)
+   https://github.com/missuo/OpenAI-Checker
+   URL used: https://cdn.jsdelivr.net/gh/missuo/OpenAI-Checker/openai.sh
+   License: MIT
+
+3. Region media unlock checker
+   https://check.unlock.media
+   License: not declared
+
+4. yeahwu check
+   https://github.com/yeahwu/check
+   URL used: https://raw.githubusercontent.com/yeahwu/check/main/check.sh
+   License: not declared
+
+5. IP.Check.Place (xykt IP quality check)
+   https://IP.Check.Place
+   License: not declared
+
+6. mtr_trace (zhucaidan)
+   https://github.com/zhucaidan/mtr_trace
+   URL used: https://raw.githubusercontent.com/zhucaidan/mtr_trace/main/mtr_trace.sh
+   License: not declared
+
+7. NextTrace
+   https://nxtrace.org/nt  (project: https://github.com/nxtrace/NTrace-core)
+   License: GPL-3.0
+
+8. backtrace (ludashi2020)
+   https://github.com/ludashi2020/backtrace
+   URL used: https://raw.githubusercontent.com/ludashi2020/backtrace/main/install.sh
+   License: not declared
+
+9. Speedtest (i-abc)
+   https://github.com/i-abc/Speedtest
+   URL used: https://raw.githubusercontent.com/i-abc/Speedtest/main/speedtest.sh
+   License: not declared
+
+10. Net.Check.Place (network quality check)
+    https://Net.Check.Place
+    License: not declared
+
+11. TcpQuality (ibsgss)
+    https://github.com/ibsgss/TcpQuality
+    URL used: https://raw.githubusercontent.com/ibsgss/TcpQuality/main/runTcpQuality.sh
+    License: not declared
+
+12. YABS (Yet-Another-Bench-Script)
+    https://yabs.sh
+    Project: https://github.com/masonr/yet-another-bench-script
+    License: BSD-3-Clause
+
+13. GB5 (i-abc Geekbench 5 wrapper)
+    https://github.com/i-abc/GB5
+    URL used: https://raw.githubusercontent.com/i-abc/GB5/main/gb5-test.sh
+    License: not declared
+
+14. bench.sh
+    https://bench.sh
+    License: not declared
+
+15. ecs (spiritLHLS fused benchmark)
+    https://github.com/spiritLHLS/ecs
+    URL used: https://raw.githubusercontent.com/spiritLHLS/ecs/main/ecs.sh
+    License: GPL-3.0
+
+16. NodeQuality
+    https://run.NodeQuality.com
+    License: not declared
+
+17. linuxmirrors
+    https://linuxmirrors.cn/main.sh
+    Project: https://github.com/SuperManito/LinuxMirrors
+    License: GPL-2.0
+
+18. 168.diy linuxbox.sh
+    https://168.diy/linuxbox.sh
+    License: not declared (the script ships without a license file)
+    System-tools items 15, 16 and 17 are derived from its menu items 0, 5 and 92;
+    source line ranges are marked inline in toolbox.sh.
+
+19. GOST (ginuerzh)
+    https://github.com/ginuerzh/gost
+    Binary fetched on demand via the "安装 GOST 环境" feature, e.g.
+    https://github.com/ginuerzh/gost/releases/download/v2.12.0/gost_2.12.0_linux_amd64.tar.gz
+    License: MIT
+
+20. leitbogioro/Tools (InstallNET.sh)
+    https://github.com/leitbogioro/Tools
+    URLs used:
+    https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh
+    https://gitee.com/mb9e8j2/Tools/raw/master/Linux_reinstall/InstallNET.sh
+    License: not declared (no LICENSE file; the README contains an
+    "Unlicense and Legal notice" section with an MIT-style disclaimer)
+
+Installed through the system package manager (apt), not fetched at runtime:
+fail2ban (GPL-2.0), locales, tar, iproute2, openssh-server/client, ufw.
