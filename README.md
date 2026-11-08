@@ -90,19 +90,19 @@ my-toolbox/
 
 | 编号 | 功能 | 来源 | 本工具箱的处理方式 |
 |---|---|---|---|
-| 1 | 修改 SSH 端口 | kejilion 6 `new_ssh_port` | 备份配置、sshd -t 校验、先放行防火墙再重启、监听确认 |
-| 2 | 优化 DNS | kejilion 7 `set_dns_ui` / `set_dns` | 国内外预设与手动输入；不使用 chattr 锁定 |
-| 3 | IPv4/IPv6 优先级 | kejilion 10 `prefer_ipv4` | 通过 gai.conf 调整；**不搬**第三方 jhb.ovh 修复脚本 |
-| 4 | 查看端口占用 | kejilion 11 内联命令 | `ss -tulnape` |
-| 5 | 虚拟内存 | kejilion 12 `add_swap` | fallocate（dd 回退）+ mkswap + fstab |
+| 1 | 修改SSH连接端口 | kejilion 6 `new_ssh_port` | 备份配置、sshd -t 校验、先放行防火墙再重启、监听确认 |
+| 2 | 优化DNS地址 | kejilion 7 `set_dns_ui` / `set_dns` | 国内外预设与手动输入；不使用 chattr 锁定 |
+| 3 | 切换优先ipv4/ipv6 | kejilion 10 `prefer_ipv4` | 通过 gai.conf 调整；**不搬**第三方 jhb.ovh 修复脚本 |
+| 4 | 查看端口占用状态 | kejilion 11 内联命令 | `ss -tulnape` |
+| 5 | 修改虚拟内存大小 | kejilion 12 `add_swap` | fallocate（dd 回退）+ mkswap + fstab |
 | 6 | 修改主机名 | kejilion 18 内联逻辑 | hostnamectl 并同步 /etc/hosts |
-| 7 | 切换更新源 | kejilion 19 `run_linuxmirrors_manual` | 下载 linuxmirrors.cn/main.sh 到临时文件执行 |
-| 8 | SSH 防御 | kejilion 22 `fail2ban_panel` | apt 安装 fail2ban + 自写 jail.local，可查看/解封/卸载 |
-| 9 | 用户密钥登录 | kejilion 24 `sshkey_panel` / `sshkey_on` | ed25519 生成、粘贴/GitHub/URL 导入、仅密钥模式切换 |
-| 10 | 修复 OpenSSH 漏洞 | kejilion 26 第三方编译脚本 | **改为 apt 安全仓库升级** openssh，更可控 |
-| 11 | 内核参数优化 | kejilion 28 `Kernel_optimize` | 自写 sysctl 模板：高性能/均衡/网站/还原 |
+| 7 | 切换系统更新源 | kejilion 19 `run_linuxmirrors_manual` | 下载 linuxmirrors.cn/main.sh 到临时文件执行 |
+| 8 | SSH防御程序 | kejilion 22 `fail2ban_panel` | apt 安装 fail2ban + 自写 jail.local，可查看/解封/卸载 |
+| 9 | 用户密钥登录模式 | kejilion 24 `sshkey_panel` / `sshkey_on` | ed25519 生成、粘贴/GitHub/URL 导入、仅密钥模式切换 |
+| 10 | 修复OpenSSH高危漏洞 | kejilion 26 第三方编译脚本 | **改为 apt 安全仓库升级** openssh，更可控 |
+| 11 | Linux系统内核参数优化 | kejilion 28 `Kernel_optimize` | 自写 sysctl 模板：高性能/均衡/网站/还原 |
 | 12 | 切换系统语言 | kejilion 31 `linux_language` | locales + locale-gen，英/简中/繁中 |
-| 13 | 命令行美化 | kejilion 32 `shell_bianse` | 6 套 PS1 配色，标记行管理可干净还原 |
+| 13 | 命令行美化工具 | kejilion 32 `shell_bianse` | 6 套 PS1 配色，标记行管理可干净还原 |
 | 14 | 系统备份与恢复 | kejilion 34 `linux_backup` | tar.gz 备份到 /backups，恢复需二次确认 |
 | 15 | 基础环境安装 | linuxbox 0 | apt 安装 sudo/curl/wget/tar/zip/ca-certificates；原脚本自安装部分由 `tb install` 承担 |
 | 16 | 安装 GOST 环境 | linuxbox 5 | 架构自动识别（原版仅 amd64，现支持 amd64/armv8/armv7/386），systemd 单元改为 simple，配置占位不自动启动 |
