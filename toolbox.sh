@@ -190,9 +190,12 @@ tb_self_install() {
     local src target
     src="$(tb_self_path)"
     target="/usr/local/bin/$TB_CMD"
-    if [[ ! -e "$src" ]]; then
-        tb_error "找不到脚本来源（$src），安装中止"
-        return 1
+    # 管道（curl|bash）下脚本已被 bash 整体读入内存，来源 fd 到 EOF，无法复制，
+    # 改为从 GitHub 下载最新版安装，避免写入空文件
+    if [[ ! -f "$src" ]]; then
+        tb_log "管道方式运行，改为从 GitHub 下载安装"
+        tb_self_update
+        return $?
     fi
     cp -f -- "$src" "$target"
     chmod 755 "$target"
@@ -1275,7 +1278,23 @@ tb_feat_advanced_menu() {
     done
 }
 
+# 首次运行引导：仅在 curl|bash 管道（来源不是常规文件）且 root 时触发，
+# 自动安装并执行一遍检查更新；普通文件/已安装路径启动不重复执行
+tb_first_bootstrap() {
+    local src
+    src="$(tb_self_path)"
+    [[ -f "$src" ]] && return 0
+    if [[ "$EUID" -ne 0 ]]; then
+        tb_warn "非 root 运行，跳过自动安装，需要时执行: $TB_CMD install"
+        return 0
+    fi
+    tb_log "首次运行：自动安装并检查更新（等同 install + 检查更新）"
+    # 管道场景下 tb_self_update 下载最新版直接落到 /usr/local/bin，一步完成
+    tb_self_update
+}
+
 tb_main_menu() {
+    tb_first_bootstrap
     tb_auto_check_update
     while true; do
         tb_clear

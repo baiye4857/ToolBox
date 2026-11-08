@@ -12,13 +12,15 @@ bash <(curl -sL https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox
 TB_MIRROR="https://ghproxy.net/" bash <(curl -sL https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh)
 ```
 
-进入交互菜单时会自动检查更新（网络失败静默跳过，不阻塞使用）。安装为常驻命令可直接执行：
+**首次运行行为**：以 root 执行上面的无参数命令时（curl|bash 管道方式），会自动完成安装并执行一遍检查更新，等效于先跑 `install` 再跑高级功能里的「检查更新」，随后进入主菜单；非 root 会跳过自动安装并提示，直接运行已安装的 `tb` 或普通 .sh 文件不重复执行。安装为常驻命令也可显式执行：
 
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh) install
 # 之后输入 tb 即可启动
 tb
 ```
+
+说明：管道方式下脚本已被 bash 整体读入内存、来源 fd 到 EOF，无法复制自身，因此自动安装/更新统一从 GitHub 下载最新版落到 `/usr/local/bin/tb`，避免写入空文件。
 
 ## 支持系统
 
@@ -84,7 +86,7 @@ my-toolbox/
 | 1 | 检查更新 | 从 GitHub raw 下载最新版，校验 shebang 后替换，旧版备份为 .bak；CLI 命令 `tb update` |
 | 2 | 卸载 ToolBox | root 权限 + 确认后执行：删除 /usr/local/bin/tb(.bak)、sshd/resolv.conf 的 .tb.bak、/root/reinstall、/backups、/root/toolbox.sh 与当前目录 toolbox.sh，完成后退出；CLI 命令 `tb uninstall` |
 
-启动菜单时的自动检查更新只比对版本号，发现新版本会询问是否更新；无 curl、超时或网络失败时静默跳过。
+启动菜单时的自动检查更新只比对版本号，发现新版本会询问是否更新；无 curl、超时或网络失败时静默跳过。curl|bash 管道首次以 root 运行时，还会先自动执行一遍完整的「检查更新」（下载最新版直接安装，等同 install + 检查更新），见上文「首次运行行为」。
 
 ### 系统工具（菜单内 1–17 连续编号）
 
