@@ -6,16 +6,16 @@ Debian/Ubuntu 单文件一键运维工具箱，仿照 kejilion.sh 的交互形�
 
 ```bash
 # 直连 GitHub
-bash <(curl -sL https://raw.githubusercontent.com/<你的用户名>/<仓库名>/main/toolbox.sh)
+bash <(curl -sL https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh)
 
 # 国内加速（ghproxy 类前缀，可自行替换）
-TB_MIRROR="https://ghproxy.net/" bash <(curl -sL https://raw.githubusercontent.com/<你的用户名>/<仓库名>/main/toolbox.sh)
+TB_MIRROR="https://ghproxy.net/" bash <(curl -sL https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh)
 ```
 
-安装为常驻命令（首次进入菜单选 `01`，或直接）：
+进入交互菜单时会自动检查更新（网络失败静默跳过，不阻塞使用）。安装为常驻命令可直接执行：
 
 ```bash
-bash <(curl -sL <RAW 地址>) install
+bash <(curl -sL https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh) install
 # 之后输入 tb 即可启动
 tb
 ```
@@ -47,8 +47,8 @@ my-toolbox/
    git remote add origin git@github.com:<你的用户名>/<仓库名>.git
    git push -u origin main
    ```
-2. 编辑 `toolbox.sh` 顶部，把 `TB_RAW_URL` 改成你的真实 raw 地址，再提交一次。
-3. 以后每次改完 push 到 main，用户端 `tb update` 即可更新；建议用 git tag 管理版本并同步修改 `TB_VERSION`。
+2. `toolbox.sh` 顶部 `TB_RAW_URL` 已配置为 baiye4857/ToolBox 的 raw 地址；更换仓库时同步修改。
+3. 以后每次改完 push 到 main，用户端进入菜单自动检查更新，也可手动 `tb update`；建议用 git tag 管理版本并同步修改 `TB_VERSION`。
 
 ## 如何添加/搬运一个功能
 
@@ -75,6 +75,16 @@ my-toolbox/
 | 2 | 系统清理 | 改写自 kejilion `linux_clean` | apt 无用依赖、缓存清理，journal 日志收缩需确认 |
 | 3 | 测试脚本合集 | 改写自 kejilion `linux_test` | 17 项上游测试脚本的薄封装，见下表 |
 | 4 | 系统工具 | 见下 | 14 项子功能 |
+| TB | 高级功能 | 本工具箱自写 | 子菜单含「检查更新」与「卸载 ToolBox」，输入 TB 或 tb 均可 |
+
+### 高级功能（菜单输入 TB）
+
+| 编号 | 功能 | 说明 |
+|---|---|---|
+| 1 | 检查更新 | 从 GitHub raw 下载最新版，校验 shebang 后替换，旧版备份为 .bak；CLI 命令 `tb update` |
+| 2 | 卸载 ToolBox | root 权限 + 确认后执行：删除 /usr/local/bin/tb(.bak)、sshd/resolv.conf 的 .tb.bak、/root/reinstall、/backups、/root/toolbox.sh 与当前目录 toolbox.sh，完成后退出；CLI 命令 `tb uninstall` |
+
+启动菜单时的自动检查更新只比对版本号，发现新版本会询问是否更新；无 curl、超时或网络失败时静默跳过。
 
 ### 系统工具（菜单内 1–17 连续编号）
 

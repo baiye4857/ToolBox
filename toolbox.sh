@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================
 #  My Toolbox —— Debian/Ubuntu 一键工具箱（单文件）
-#  版本: 0.3.1
+#  版本: 0.4.0
 #  许可: Apache-2.0
 #  一键运行:
 #    bash <(curl -sL https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh)
@@ -12,7 +12,7 @@
 set -o pipefail
 
 # ------------------------- 全局配置（按需修改） -------------------------
-TB_VERSION="0.3.1"
+TB_VERSION="0.4.0"
 TB_CMD="tb"                                    # 安装后的命令名，可改成你自己的品牌名
 TB_RAW_URL="https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh"
 TB_MIRROR="${TB_MIRROR:-}"                     # 加速前缀，如 https://ghproxy.net/ ；留空直连
@@ -1198,7 +1198,74 @@ tb_feat_settings_menu() {
 #  交互菜单
 # =============================================================
 
+# 版本号比较：$1 大于 $2 时返回 0
+tb_ver_gt() {
+    local a b i
+    IFS=. read -r -a a <<< "$1"
+    IFS=. read -r -a b <<< "$2"
+    for i in 0 1 2; do
+        if (( ${a[i]:-0} > ${b[i]:-0} )); then return 0; fi
+        if (( ${a[i]:-0} < ${b[i]:-0} )); then return 1; fi
+    done
+    return 1
+}
+
+# 启动时自动检查更新：网络失败/无 curl 一律静默跳过，不阻塞进入菜单
+tb_auto_check_update() {
+    tb_has curl || return 0
+    local url="$TB_RAW_URL" tmp remote_ver
+    [[ -n "$TB_MIRROR" ]] && url="${TB_MIRROR}${TB_RAW_URL}"
+    tmp="$(mktemp)" || return 0
+    if ! curl -fsSL --max-time 8 -o "$tmp" "$url" 2>/dev/null; then
+        rm -f "$tmp"; return 0
+    fi
+    remote_ver="$(grep -m1 -oE 'TB_VERSION="[0-9.]+"' "$tmp" | grep -oE '[0-9.]+')"
+    rm -f "$tmp"
+    [[ -n "$remote_ver" ]] || return 0
+    if tb_ver_gt "$remote_ver" "$TB_VERSION"; then
+        tb_warn "发现新版本: ${remote_ver}（当前 ${TB_VERSION}）"
+        if tb_confirm "是否立即更新？"; then
+            tb_self_update
+        fi
+    fi
+}
+
+# 卸载 ToolBox：按用户指定命令执行，需 root 与确认，完成后退出
+tb_feat_uninstall() {
+    tb_require_root || return 1
+    tb_warn "将删除已安装的 $TB_CMD 命令及相关备份/目录，此操作不可恢复"
+    tb_confirm "确认卸载 ToolBox？" || return 1
+    rm -f /usr/local/bin/tb /usr/local/bin/tb.bak
+    rm -f /etc/ssh/sshd_config.tb.bak /etc/resolv.conf.tb.bak
+    rm -rf /root/reinstall /backups
+    rm -f /root/toolbox.sh ./toolbox.sh
+    tb_ok "ToolBox 已卸载"
+    exit 0
+}
+
+# 高级功能菜单（检查更新 + 卸载）
+tb_feat_advanced_menu() {
+    while true; do
+        tb_clear
+        echo -e "${C_BOLD}高级功能${C_RESET}"
+        echo "------------------------"
+        echo "1. 检查更新"
+        echo "2. 卸载 ToolBox"
+        echo "------------------------"
+        echo "0. 返回主菜单"
+        echo "------------------------"
+        read -r -p "请选择: " c || return 0
+        case "$c" in
+            1) tb_self_update; tb_pause ;;
+            2) tb_feat_uninstall ;;
+            0) return 0 ;;
+            *) tb_warn "无效输入"; sleep 1 ;;
+        esac
+    done
+}
+
 tb_main_menu() {
+    tb_auto_check_update
     while true; do
         tb_clear
         echo -e "${C_BOLD}============================================"
@@ -1208,9 +1275,8 @@ tb_main_menu() {
         echo " 2. 系统清理"
         echo " 3. 测试脚本合集"
         echo " 4. 系统工具"
+        echo "TB. 高级功能"
         echo "--------------------------------------------"
-        echo " 01. 安装/修复 $TB_CMD 命令"
-        echo " 00. 检查更新"
         echo " 0.  退出"
         echo "============================================"
         read -r -p "请输入选择: " choice || exit 0
@@ -1219,8 +1285,7 @@ tb_main_menu() {
             2)  tb_feat_clean; tb_pause ;;
             3)  tb_feat_test_menu ;;
             4)  tb_feat_settings_menu ;;
-            01) tb_self_install; tb_pause ;;
-            00) tb_self_update; tb_pause ;;
+            TB|tb) tb_feat_advanced_menu ;;
             0)  tb_log "再见"; exit 0 ;;
             *)  tb_warn "无效输入，请重新选择"; sleep 1 ;;
         esac
@@ -1249,8 +1314,10 @@ tb_help() {
     ps1       命令行美化           backup    备份与恢复
     baseenv   基础环境安装         gost      安装 GOST
     dd        DD 重装脚本下载
+  $TB_CMD update           从 GitHub 更新到最新版（启动交互菜单时也会自动检查）
+  $TB_CMD advanced         高级功能菜单（更新/卸载）
+  $TB_CMD uninstall        卸载 ToolBox
   $TB_CMD install          安装/修复 $TB_CMD 到 /usr/local/bin
-  $TB_CMD update           从 GitHub 更新到最新版
   $TB_CMD help             显示本帮助
   $TB_CMD version          显示版本号
 环境变量:
@@ -1283,6 +1350,8 @@ tb_cli_dispatch() {
         dd|reinstall|重装)    tb_feat_dd_leitbo ;;
         install|安装)         tb_self_install ;;
         update|更新)          tb_self_update ;;
+        advanced|高级)        tb_feat_advanced_menu ;;
+        uninstall|卸载)       tb_feat_uninstall ;;
         help|--help|-h)       tb_help ;;
         version|--version|-v) echo "$TB_VERSION" ;;
         '')                   tb_main_menu ;;
