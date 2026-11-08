@@ -4,9 +4,9 @@
 #  版本: 0.3.0
 #  许可: Apache-2.0
 #  一键运行:
-#    bash <(curl -sL <你的 RAW 地址>)
+#    bash <(curl -sL https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh)
 #  国内加速:
-#    TB_MIRROR="https://ghproxy.net/" bash <(curl -sL <你的 RAW 地址>)
+#    TB_MIRROR="https://ghproxy.net/" bash <(curl -sL https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh)
 # =============================================================
 
 set -o pipefail
