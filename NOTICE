@@ -8,8 +8,14 @@ This product includes code derived from:
 1. kejilion/sh
    https://github.com/kejilion/sh
    License: Apache License 2.0
-   Ported functions are marked inline in toolbox.sh with source file and
-   line-range comments; copyright remains with the original project.
+   Vendored verbatim: the complete kejilion-cn.sh v4.5.17 library (all
+   functions and global variables, excluding only its native entry block)
+   is embedded byte-identical in toolbox.sh inside tb_ensure_kjlib, together
+   with a thin bridge that reproduces the linux_Settings branch bodies for
+   menu items 1-14. The library runs in a separate bash child process; its
+   send_stats endpoint (api.kejilion.pro), chattr handling and its
+   upgrade_openssh9.8p1.sh helper are part of the original project.
+   Copyright remains with the original project.
 
 Runtime dependencies (third-party scripts fetched and executed on demand
 through the "测试脚本合集" and "切换更新源" features). Each project keeps
@@ -110,5 +116,13 @@ its own license; check the upstream repository for details. Projects marked
     License: not declared (no LICENSE file; the README contains an
     "Unlicense and Legal notice" section with an MIT-style disclaimer)
 
+21. jhb.ovh (IPv6 repair helper)
+    https://jhb.ovh/jb/v6.sh
+    Reached from the verbatim kejilion menu (system-tools item 3, "IPv6
+    修复工具"); the script ships without a license file.
+    License: not declared
+
 Installed through the system package manager (apt), not fetched at runtime:
 fail2ban (GPL-2.0), locales, tar, iproute2, openssh-server/client, ufw.
+The verbatim kejilion library may additionally install packages via its
+own apt wrappers when menu items 1-14 are used.

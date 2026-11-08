@@ -1,6 +1,6 @@
 # My Toolbox
 
-Debian/Ubuntu 单文件一键运维工具箱，仿照 kejilion.sh 的交互形态，功能按需逐个搬运/改写。
+Debian/Ubuntu 单文件一键运维工具箱，仿照 kejilion.sh 的交互形态。系统工具 1–14 对应的 kejilion 功能**逐字复制（verbatim vendoring）**：kejilion v4.5.17 的全部函数与全局变量原样内嵌，在独立 bash 子进程中运行，不与本工具箱的函数/变量空间混用；15–17 为薄封装实现。
 
 ## 一键运行
 
@@ -63,7 +63,7 @@ my-toolbox/
    #       cn/kejilion.sh Lxxxx–Lxxxx 改写，版权归原项目所有
    ```
 3. 在 `tb_main_menu` 的 `case` 注册菜单编号，在 `tb_cli_dispatch` 注册命令（支持中文别名）。
-4. **不要搬运**：`send_stats` 埋点、`permission_granted` 自改脚本逻辑、自动更新 crontab（本骨架用显式 `tb update` 代替）。
+4. 系统工具 1–14 采用**逐字库**方式：kejilion 全部代码原样内嵌于 `tb_ensure_kjlib` 的 heredoc，首次使用时释放到 `/usr/local/share/tb/kejilion-lib.sh`（root）或 `~/.cache/tb/kejilion-lib.sh`（非 root），由 `tb_kj` 在独立子进程调用；逐字库内的 `send_stats`、chattr 锁定、防火墙包卸载等均保持 kejilion 原始行为。
 5. 若功能本质是调用上游脚本（如 bench.sh、WARP、重装脚本），优先自己写薄封装指向官方上游，并在 NOTICE 登记上游许可证。
 6. 测试建议：新开一台一次性 VPS 或用云厂商快照，验证菜单路径与失败回滚。
 
@@ -90,35 +90,35 @@ my-toolbox/
 
 ### 系统工具（菜单内 1–17 连续编号）
 
-| 编号 | 功能 | 来源 | 本工具箱的处理方式 |
+| 编号 | 功能 | 来源 | 处理方式 |
 |---|---|---|---|
-| 1 | 修改SSH连接端口 | kejilion 6 `new_ssh_port` | 备份配置、sshd -t 校验、先放行防火墙再重启、监听确认 |
-| 2 | 优化DNS地址 | kejilion 7 `set_dns_ui` / `set_dns` | 国内外预设与手动输入；不使用 chattr 锁定 |
-| 3 | 切换优先ipv4/ipv6 | kejilion 10 `prefer_ipv4` | 通过 gai.conf 调整；**不搬**第三方 jhb.ovh 修复脚本 |
-| 4 | 查看端口占用状态 | kejilion 11 内联命令 | `ss -tulnape` |
-| 5 | 修改虚拟内存大小 | kejilion 12 `add_swap` | fallocate（dd 回退）+ mkswap + fstab |
-| 6 | 修改主机名 | kejilion 18 内联逻辑 | hostnamectl 并同步 /etc/hosts |
-| 7 | 切换系统更新源 | kejilion 19 `run_linuxmirrors_manual` | 下载 linuxmirrors.cn/main.sh 到临时文件执行 |
-| 8 | SSH防御程序 | kejilion 22 `fail2ban_panel` | apt 安装 fail2ban + 自写 jail.local，可查看/解封/卸载 |
-| 9 | 用户密钥登录模式 | kejilion 24 `sshkey_panel` / `sshkey_on` | ed25519 生成、粘贴/GitHub/URL 导入、仅密钥模式切换 |
-| 10 | 修复OpenSSH高危漏洞 | kejilion 26 第三方编译脚本 | **改为 apt 安全仓库升级** openssh，更可控 |
-| 11 | Linux系统内核参数优化 | kejilion 28 `Kernel_optimize` | 自写 sysctl 模板：高性能/均衡/网站/还原 |
-| 12 | 切换系统语言 | kejilion 31 `linux_language` | locales + locale-gen，英/简中/繁中 |
-| 13 | 命令行美化工具 | kejilion 32 `shell_bianse` | 6 套 PS1 配色，标记行管理可干净还原 |
-| 14 | 系统备份与恢复 | kejilion 34 `linux_backup` | tar.gz 备份到 /backups，恢复需二次确认 |
+| 1 | 修改SSH连接端口 | kejilion 6 `new_ssh_port` | **逐字复制**：原分支交互体 + `new_ssh_port`，含 correct_ssh_config/restart_ssh/open_port 及卸载防火墙包等原始行为 |
+| 2 | 优化DNS地址 | kejilion 7 `set_dns_ui` | **逐字复制**，含 chattr 锁定 resolv.conf 等原始行为 |
+| 3 | 切换优先ipv4/ipv6 | kejilion 10 `prefer_ipv4` | **逐字复制**：含 IPv4/IPv6 切换、jhb.ovh 第三方修复工具入口 |
+| 4 | 查看端口占用状态 | kejilion 11 内联命令 | **逐字复制**：`ss -tulnape` |
+| 5 | 修改虚拟内存大小 | kejilion 12 `add_swap` | **逐字复制**：原分支交互体 + `add_swap` |
+| 6 | 修改主机名 | kejilion 18 内联逻辑 | **逐字复制**：hostnamectl 并同步 /etc/hosts |
+| 7 | 切换系统更新源 | kejilion 19 `run_linuxmirrors_manual` | **逐字复制**：linuxmirrors 与 switch_mirror 各分支 |
+| 8 | SSH防御程序 | kejilion 22 `fail2ban_panel` | **逐字复制** |
+| 9 | 用户密钥登录模式 | kejilion 24 `sshkey_panel` | **逐字复制** |
+| 10 | 修复OpenSSH高危漏洞 | kejilion 26 | **逐字复制**：下载并执行 kejilion 官方 `upgrade_openssh9.8p1.sh` 第三方编译脚本 |
+| 11 | Linux系统内核参数优化 | kejilion 28 `Kernel_optimize` | **逐字复制** |
+| 12 | 切换系统语言 | kejilion 31 `linux_language` | **逐字复制** |
+| 13 | 命令行美化工具 | kejilion 32 `shell_bianse` | **逐字复制** |
+| 14 | 系统备份与恢复 | kejilion 34 `linux_backup` | **逐字复制** |
 | 15 | 基础环境安装 | linuxbox 0 | apt 安装 sudo/curl/wget/tar/zip/ca-certificates；原脚本自安装部分由 `tb install` 承担 |
 | 16 | 安装 GOST 环境 | linuxbox 5 | 架构自动识别（原版仅 amd64，现支持 amd64/armv8/armv7/386），systemd 单元改为 simple，配置占位不自动启动 |
 | 17 | DD 重装系统 | linuxbox 92 | 下载 leitbogioro InstallNET（GitHub/Gitee）并校验 shebang，终端输入两次新 root 密码（输入可见），确认后执行 `bash InstallNET.sh -debian 12 -pwd 密码` |
 
-### 未搬运 / 已替换
+### 未接入菜单 / 已替换
 
-- **kejilion 27 红帽系内核升级（elrepo）**：RHEL 系专属，apt 系统不适用，未放入菜单。
+- **kejilion 27 红帽系内核升级（elrepo）**：逐字库内已包含该函数，但 RHEL 系专属、apt 系统不适用，未在菜单接线。
 - **测试合集里的 besttrace / Superspeed**：原 git.io 短链已停止服务，用 NextTrace、i-abc 测速、NetQuality 等存活项目替代。
 - **linuxbox 其余项**：MTProto/BBRPlus/MTG/GOST 配置等未点名功能不搬；90/91 号 DD 会直接执行远程脚本且硬编码密码，不搬。
--  kejilion 的埋点 `send_stats`、静默自更新 crontab、自改脚本逻辑一律不搬；本工具箱更新只走显式 `tb update`。
+- 逐字库内 kejilion 的 `send_stats` 埋点、许可自改逻辑、crontab 等保持原样，仅在库子进程内生效；本工具箱自身的更新仍只走显式 `tb update`，不引入 kejilion 静默自更新。
 
 ## 许可证与归属
 
 - 本项目代码：[Apache License 2.0](LICENSE)
-- 搬运自 kejilion/sh 的函数遵循其 Apache-2.0 许可，在函数头与 [NOTICE](NOTICE) 中署名；Apache-2.0 允许修改和再分发，但**不得移除版权、许可与来源声明**。
+- 系统工具 1–14 为 kejilion/sh（Apache-2.0）v4.5.17 代码的逐字副本，库块与 [NOTICE](NOTICE) 中保留来源与版本署名；Apache-2.0 允许复制和再分发，但**不得移除版权、许可与来源声明**。
 - 运行时调用的第三方上游脚本各有自己的许可证，随功能上线在 NOTICE 中逐项登记。
