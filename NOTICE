@@ -1,7 +1,7 @@
-My Toolbox
+淘宝工具箱
 Copyright 2026
 
-This product includes software developed by the My Toolbox project.
+This product includes software developed by the 淘宝工具箱 project.
 
 This product includes code derived from:
 
@@ -101,12 +101,13 @@ its own license; check the upstream repository for details. Projects marked
     License: not declared (the script ships without a license file)
     Vendored verbatim: the complete linuxbox.sh is embedded byte-identical
     in toolbox.sh (tb_ensure_lblib) and released as linuxbox-lib.sh; a
-    bridge (linuxbox-bridge.sh) reproduces the menu 0 and 5 branch bodies
-    and the menu 92 download portion byte-identically, and dispatches
-    system-tools items 15, 16 and 17 in a separate bash child process.
-    Item 17's password prompts and InstallNET invocation are custom
-    additions by this project (visible double entry, empty/mismatch
-    rejected).
+    bridge (linuxbox-bridge.sh) reproduces the menu 0, 5, 92 and 3
+    branch bodies byte-identically and dispatches system-tools items
+    16, 17, 18 and 19 in a separate bash child process. The menu 19
+    entry additionally runs through a toolbox-level guard that downloads
+    the same upstream script to a temp file and executes it as a file
+    (jsDelivr fallback), while the embedded library and bridge stay
+    byte-identical.
 
 19. GOST (ginuerzh)
     https://github.com/ginuerzh/gost
@@ -131,5 +132,6 @@ its own license; check the upstream repository for details. Projects marked
 Installed through the system package manager (apt), not fetched at runtime:
 fail2ban (GPL-2.0), locales, tar, iproute2, openssh-server/client, ufw.
 The verbatim kejilion library may additionally install packages via its
-own apt wrappers when menu items 1-14 are used; the verbatim linuxbox
-bridge installs sudo/curl/wget/tar/zip via apt when item 15 is used.
+own apt wrappers when its menu items are used; the verbatim linuxbox
+bridge installs sudo/curl/wget/tar/zip via apt when item 16 is used, and
+the ports feature (item 5) installs iproute2 via apt when ss is missing.

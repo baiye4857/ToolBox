@@ -1,21 +1,14 @@
 #!/bin/bash
 # =============================================================
-#  My Toolbox —— Debian/Ubuntu 一键工具箱（单文件）
-#  版本: 0.4.0
-#  许可: Apache-2.0
-#  一键运行:
-#    bash <(curl -sL https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh)
-#  国内加速:
-#    TB_MIRROR="https://ghproxy.net/" bash <(curl -sL https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh)
+#  淘宝工具箱 —— Debian/Ubuntu 一键工具箱
 # =============================================================
 
-set -o pipefail
-
-# ------------------------- 全局配置（按需修改） -------------------------
-TB_VERSION="0.6.1"
+TB_VERSION="0.7.6"
 TB_CMD="tb"                                    # 安装后的命令名，可改成你自己的品牌名
-TB_RAW_URL="https://raw.githubusercontent.com/baiye4857/ToolBox/main/toolbox.sh"
+TB_RAW_URL="https://168.diy/sh/toolbox.sh"
 TB_MIRROR="${TB_MIRROR:-}"                     # 加速前缀，如 https://ghproxy.net/ ；留空直连
+
+set -o pipefail
 
 # ------------------------- 颜色（非终端自动降级） -------------------------
 if [[ -t 1 ]]; then
@@ -34,7 +27,7 @@ tb_ok()    { echo -e "${C_GREEN}[+]${C_RESET} $*"; }
 tb_warn()  { echo -e "${C_YELLOW}[!]${C_RESET} $*"; }
 tb_error() { echo -e "${C_RED}[x]${C_RESET} $*" >&2; }
 
-tb_pause() { read -r -p "按回车键继续..."; }
+tb_pause() { printf '%s' "按回车键继续..."; read -r; }
 
 # 清屏：无 clear 命令或非交互环境时静默降级
 tb_clear() { clear 2>/dev/null || true; }
@@ -37943,24 +37936,6 @@ EOF
     done
 }
 
-# 本工具箱新增：下载完成后两次可见输入 root 密码并执行 InstallNET
-tb_lb_17_ask_and_run() {
-    local pwd1 pwd2
-    read -p "请输入新系统 root 密码: " pwd1 || exit 1
-    if [[ -z "$pwd1" ]]; then
-        echo -e "${RED}密码不能为空，已取消${RESET}"
-        exit 1
-    fi
-    read -p "再次输入 root 密码确认: " pwd2 || exit 1
-    if [[ "$pwd1" != "$pwd2" ]]; then
-        echo -e "${RED}两次输入不一致，已取消${RESET}"
-        exit 1
-    fi
-    # 注意：-pwd 参数会短暂出现在进程列表中，这是上游脚本固定接口
-    bash InstallNET.sh -debian 12 -pwd "$pwd1"
-    exit $?
-}
-
 tb_lb_17() {
             while true; do
                 echo
@@ -37971,19 +37946,13 @@ tb_lb_17() {
                 case $LeitboGi0roChoice in
                     1)
                         wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
-                        if [[ ! -s InstallNET.sh ]]; then
-                            echo -e "${RED}InstallNET.sh 下载失败，已取消${RESET}"
-                            exit 1
-                        fi
-                        tb_lb_17_ask_and_run
+                        echo "使用 ' bash InstallNET.sh -debian 12 ' 即可开始DD Debian12系统"
+                        exit 0
                         ;;
                     2)
                         wget --no-check-certificate -qO InstallNET.sh 'https://gitee.com/mb9e8j2/Tools/raw/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
-                        if [[ ! -s InstallNET.sh ]]; then
-                            echo -e "${RED}InstallNET.sh 下载失败，已取消${RESET}"
-                            exit 1
-                        fi
-                        tb_lb_17_ask_and_run
+                        echo "使用 ' bash InstallNET.sh -debian 12 ' 即可开始DD Debian12系统"
+                        exit 0
                         ;;
                     *)
                         echo -e "${RED}无效选项，请重新输入！${RESET}"
@@ -37992,10 +37961,16 @@ tb_lb_17() {
             done
 }
 
+tb_lb_19() {
+            echo -e "${YELLOW}正在安装 BBRPlus...${RESET}"
+            bash <(curl -Lso- https://raw.githubusercontent.com/jinwyp/one_click_script/master/install_kernel.sh)
+}
+
 case "$1" in
     15) tb_lb_15 ;;
     16) tb_lb_16 ;;
     17) tb_lb_17 ;;
+    19) tb_lb_19 ;;
     *) echo "未知 linuxbox 入口: $1" >&2; exit 2 ;;
 esac
 TB_LB_BRIDGE_EOF_7c2d
@@ -38005,6 +37980,149 @@ TB_LB_BRIDGE_EOF_7c2d
 tb_lb() {
     tb_ensure_lblib || { tb_error "linuxbox 运行库准备失败"; return 1; }
     bash "$(tb_lbbridge_path)" "$@"
+}
+
+# -------------------------------------------------------------
+# 查看端口占用状态：精简系统可能没有 ss，先确保 iproute2；
+# 随后在主 shell 直接执行（等同 kejilion 逐字 tb_kj_4 的 clear; ss -tulnape），
+# 避免嵌套子进程在部分环境下打不开；末尾暂停供查看（对应 kejilion 菜单 case 后的 break_end）；
+# 逐字库本身保持字节不动
+# -------------------------------------------------------------
+tb_feat_ports_guard() {
+    if ! tb_has ss; then
+        tb_log "未检测到 ss，安装 iproute2"
+        tb_pkg_install iproute2 || return 1
+    fi
+    clear
+    ss -tulnape
+    tb_pause
+}
+
+# -------------------------------------------------------------
+# 禁用/启用 IPv6（本工具箱自写，sysctl 方式，不锁定文件）
+# -------------------------------------------------------------
+tb_feat_ipv6() {
+    tb_require_root || return 1
+    local conf="/etc/sysctl.d/60-tb-disable-ipv6.conf" cur
+    cur="$(sysctl -n net.ipv6.conf.all.disable_ipv6 2>/dev/null)"
+    while true; do
+        tb_clear
+        echo -e "${C_BOLD}IPv6 管理${C_RESET}"
+        echo "------------------------"
+        if [[ "$cur" == "1" ]]; then
+            echo "当前状态：IPv6 已禁用"
+        else
+            echo "当前状态：IPv6 已启用"
+        fi
+        echo "1. 禁用 IPv6"
+        echo "2. 启用 IPv6"
+        echo "0. 返回"
+        echo "------------------------"
+        read -r -p "请选择: " c || return 0
+        case "$c" in
+            1)
+                cat > "$conf" <<'EOF'
+net.ipv6.conf.all.disable_ipv6=1
+net.ipv6.conf.default.disable_ipv6=1
+net.ipv6.conf.lo.disable_ipv6=1
+EOF
+                sysctl -p "$conf" >/dev/null 2>&1
+                cur=1
+                tb_ok "IPv6 已禁用（重启后依然生效）"
+                tb_pause
+                ;;
+            2)
+                rm -f "$conf"
+                sysctl -w net.ipv6.conf.all.disable_ipv6=0 >/dev/null 2>&1
+                sysctl -w net.ipv6.conf.default.disable_ipv6=0 >/dev/null 2>&1
+                sysctl -w net.ipv6.conf.lo.disable_ipv6=0 >/dev/null 2>&1
+                cur=0
+                tb_ok "IPv6 已启用"
+                tb_pause
+                ;;
+            0) return 0 ;;
+            *) tb_warn "无效输入"; sleep 1 ;;
+        esac
+    done
+}
+
+# -------------------------------------------------------------
+# 安装 BBRPlus（linuxbox 菜单 3）
+# 逐字库与桥接保持原样；此处改为先下载到临时文件、校验后再执行，
+# 避免嵌套进程替换在部分环境下无法打开菜单，运行的仍是同一上游脚本
+# -------------------------------------------------------------
+tb_feat_bbrplus_guard() {
+    tb_require_root || return 1
+    tb_has curl || { tb_pkg_install curl || return 1; }
+    local base="https://raw.githubusercontent.com/jinwyp/one_click_script/master/install_kernel.sh"
+    local cdn="https://cdn.jsdelivr.net/gh/jinwyp/one_click_script@master/install_kernel.sh"
+    local work f
+    work="$(mktemp -d)" || { tb_error "无法创建临时目录"; return 1; }
+    trap 'rm -rf "$work"' RETURN
+    f="$work/install_kernel.sh"
+    local urls=()
+    if [[ -n "$TB_MIRROR" ]]; then urls+=("${TB_MIRROR}${base}"); fi
+    urls+=("$base" "$cdn")
+    local u ok=0
+    for u in "${urls[@]}"; do
+        tb_log "下载 install_kernel.sh：$u"
+        if curl -fL --connect-timeout 15 -o "$f" "$u" && [[ -s "$f" ]]; then ok=1; break; fi
+        tb_warn "该地址失败，尝试下一个"
+    done
+    if [[ $ok -ne 1 ]]; then
+        tb_error "所有下载地址均失败，请检查服务器网络或稍后重试"
+        return 1
+    fi
+    if ! head -n1 "$f" | grep -q '^#!.*bash'; then
+        tb_error "下载内容不是预期的 bash 脚本，已中止"
+        return 1
+    fi
+    tb_log "启动 BBRPlus 内核安装脚本（与 linuxbox 菜单 3 为同一上游脚本）"
+    bash "$f"
+    return $?
+}
+
+
+# -------------------------------------------------------------
+# 18 DD 重装系统守卫：保持 linuxbox 92 的结果（下载 leitbogioro
+# InstallNET.sh 后仅提示手动执行，不自动重装、不问密码）；
+# 不在菜单里做交互式选择（避免嵌套菜单内 read 在部分环境失效），
+# 改为自动依次尝试 GitHub→Gitee（TB_MIRROR 优先），下载到临时目录
+# 校验非空与 shell 头后落到当前目录；逐字 linuxbox 库与桥接字节不动
+# -------------------------------------------------------------
+tb_feat_dd_guard() {
+    tb_require_root || return 1
+    tb_has curl || { tb_pkg_install curl || return 1; }
+    local work f ok=0 u dest
+    work="$(mktemp -d)" || { tb_error "无法创建临时目录"; return 1; }
+    trap 'rm -rf "$work"' RETURN
+    f="$work/InstallNET.sh"
+    if [[ -n "$TB_MIRROR" ]]; then
+        tb_log "经加速前缀下载 InstallNET.sh"
+        if curl -fL --connect-timeout 15 -o "$f" "${TB_MIRROR}https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh" && [[ -s "$f" ]]; then ok=1; fi
+    fi
+    if [[ $ok -ne 1 ]]; then
+        for u in \
+            "https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh" \
+            "https://gitee.com/mb9e8j2/Tools/raw/master/Linux_reinstall/InstallNET.sh" ; do
+            tb_log "下载 InstallNET.sh：$u"
+            if curl -fL --connect-timeout 15 -o "$f" "$u" && [[ -s "$f" ]]; then ok=1; break; fi
+            tb_warn "该地址失败，尝试下一个"
+        done
+    fi
+    if [[ $ok -ne 1 ]]; then
+        tb_error "所有下载地址均失败，请检查服务器网络或稍后重试"
+        return 1
+    fi
+    if ! head -n1 "$f" | grep -q '^#!'; then
+        tb_error "下载内容不是预期的 shell 脚本，已中止"
+        return 1
+    fi
+    dest="$(pwd)/InstallNET.sh"
+    cp -f "$f" "$dest"
+    chmod a+x "$dest"
+    echo "使用 ' bash InstallNET.sh -debian 12 ' 即可开始DD Debian12系统"
+    tb_pause
 }
 
 
@@ -38019,20 +38137,22 @@ tb_feat_settings_menu() {
         echo " 1. 修改SSH连接端口"
         echo " 2. 优化DNS地址"
         echo " 3. 切换优先ipv4/ipv6"
-        echo " 4. 查看端口占用状态"
-        echo " 5. 修改虚拟内存大小"
-        echo " 6. 修改主机名"
-        echo " 7. 切换系统更新源"
-        echo " 8. SSH防御程序"
-        echo " 9. 用户密钥登录模式"
-        echo "10. 修复OpenSSH高危漏洞"
-        echo "11. Linux系统内核参数优化"
-        echo "12. 切换系统语言"
-        echo "13. 命令行美化工具"
-        echo "14. 系统备份与恢复"
-        echo "15. 基础环境安装"
-        echo "16. 安装 GOST 环境"
-        echo "17. DD 重装系统"
+        echo " 4. 禁用IPv6"
+        echo " 5. 查看端口占用状态"
+        echo " 6. 修改虚拟内存大小"
+        echo " 7. 修改主机名"
+        echo " 8. 切换系统更新源"
+        echo " 9. SSH防御程序"
+        echo "10. 用户密钥登录模式"
+        echo "11. 修复OpenSSH高危漏洞"
+        echo "12. Linux系统内核参数优化"
+        echo "13. 切换系统语言"
+        echo "14. 命令行美化工具"
+        echo "15. 系统备份与恢复"
+        echo "16. 基础环境安装"
+        echo "17. 安装 GOST 环境"
+        echo "18. DD 重装系统"
+        echo "19. 安装 BBRPlus"
         echo "------------------------"
         echo " 0. 返回主菜单"
         echo "------------------------"
@@ -38041,20 +38161,22 @@ tb_feat_settings_menu() {
             1)  tb_kj 1 ;;
             2)  tb_kj 2 ;;
             3)  tb_kj 3 ;;
-            4)  tb_kj 4 ;;
-            5)  tb_kj 5 ;;
-            6)  tb_kj 6 ;;
-            7)  tb_kj 7 ;;
-            8)  tb_kj 8 ;;
-            9)  tb_kj 9 ;;
-            10) tb_kj 10 ;;
-            11) tb_kj 11 ;;
-            12) tb_kj 12 ;;
-            13) tb_kj 13 ;;
-            14) tb_kj 14 ;;
-            15) tb_lb 15 ;;
-            16) tb_lb 16 ;;
-            17) tb_lb 17 ;;
+            4)  tb_feat_ipv6 ;;
+            5)  tb_feat_ports_guard ;;
+            6)  tb_kj 5 ;;
+            7)  tb_kj 6 ;;
+            8)  tb_kj 7 ;;
+            9)  tb_kj 8 ;;
+            10) tb_kj 9 ;;
+            11) tb_kj 10 ;;
+            12) tb_kj 11 ;;
+            13) tb_kj 12 ;;
+            14) tb_kj 13 ;;
+            15) tb_kj 14 ;;
+            16) tb_lb 15 ;;
+            17) tb_lb 16 ;;
+            18) tb_feat_dd_guard ;;
+            19) tb_feat_bbrplus_guard ;;
             0)  return 0 ;;
             *)  tb_warn "无效输入"; sleep 1 ;;
         esac
@@ -38152,7 +38274,7 @@ tb_main_menu() {
     while true; do
         tb_clear
         echo -e "${C_BOLD}============================================"
-        echo " My Toolbox v$TB_VERSION"
+        echo " 淘宝工具箱 v$TB_VERSION"
         echo -e "============================================${C_RESET}"
         echo " 1. 系统信息查询"
         echo " 2. 系统清理"
@@ -38189,14 +38311,15 @@ tb_help() {
   $TB_CMD settings         系统工具菜单
   系统工具直达命令:
     sshport   修改 SSH 端口        dns       优化 DNS
-    ipmode    IP 优先级            ports     端口占用
-    swap      虚拟内存             hostname  主机名
-    mirror    切换更新源           f2b       SSH 防御
-    sshkey    用户密钥登录         sshfix    修复 OpenSSH
-    tune      内核参数优化         lang      系统语言
-    ps1       命令行美化           backup    备份与恢复
-    baseenv   基础环境安装         gost      安装 GOST
-    dd        DD 重装系统
+    ipmode    IP 优先级            ipv6      禁用/启用 IPv6
+    ports     端口占用             swap      虚拟内存
+    hostname  主机名               mirror    切换更新源
+    f2b       SSH 防御             sshkey    用户密钥登录
+    sshfix    修复 OpenSSH         tune      内核参数优化
+    lang      系统语言             ps1       命令行美化
+    backup    备份与恢复           baseenv   基础环境安装
+    gost      安装 GOST            dd        DD 重装系统
+    bbrplus   安装 BBRPlus
   $TB_CMD update           从 GitHub 更新到最新版（启动交互菜单时也会自动检查）
   $TB_CMD advanced         高级功能菜单（更新/卸载）
   $TB_CMD uninstall        卸载 ToolBox
@@ -38217,7 +38340,8 @@ tb_cli_dispatch() {
         sshport|ssh端口)      tb_kj 1 ;;
         dns)                  tb_kj 2 ;;
         ipmode|ip优先级)      tb_kj 3 ;;
-        ports|端口占用)       tb_kj 4 ;;
+        ipv6|禁用ipv6)        tb_feat_ipv6 ;;
+        ports|端口占用)       tb_feat_ports_guard ;;
         swap|虚拟内存)        tb_kj 5 ;;
         hostname|主机名)      tb_kj 6 ;;
         mirror|更新源)        tb_kj 7 ;;
@@ -38230,7 +38354,8 @@ tb_cli_dispatch() {
         backup|备份)          tb_kj 14 ;;
         baseenv|基础环境)     tb_lb 15 ;;
         gost)                 tb_lb 16 ;;
-        dd|reinstall|重装)    tb_lb 17 ;;
+        dd|reinstall|重装)    tb_feat_dd_guard ;;
+        bbrplus|bbr)          tb_feat_bbrplus_guard ;;
         install|安装)         tb_self_install ;;
         update|更新)          tb_self_update ;;
         advanced|高级)        tb_feat_advanced_menu ;;
