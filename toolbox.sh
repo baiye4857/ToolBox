@@ -3,7 +3,7 @@
 #  淘宝工具箱 —— Debian/Ubuntu 一键工具箱
 # =============================================================
 
-TB_VERSION="0.7.6"
+TB_VERSION="0.7.7"
 TB_CMD="tb"                                    # 安装后的命令名，可改成你自己的品牌名
 TB_RAW_URL="https://168.diy/sh/toolbox.sh"
 TB_MIRROR="${TB_MIRROR:-}"                     # 加速前缀，如 https://ghproxy.net/ ；留空直连
@@ -437,7 +437,8 @@ tb_kjlib_path() {
 tb_ensure_kjlib() {
     local target tmp
     target="$(tb_kjlib_path)"
-    if [[ -s "$target" ]] && grep -q "TB_KJ_PIN=$TB_KJ_PIN" "$target" 2>/dev/null; then
+    if [[ -s "$target" ]] && grep -q "TB_KJ_PIN=$TB_KJ_PIN" "$target" 2>/dev/null \
+        && grep -q "TB_BUILD=$TB_VERSION" "$target" 2>/dev/null; then
         return 0
     fi
     mkdir -p "$(dirname "$target")" || return 1
@@ -37219,8 +37220,9 @@ kpanel_backup_center_dispatch() {
 TB_KJ_LIB_EOF_9f3a
     cat >> "$tmp" <<'TB_KJ_BRIDGE_EOF_9f3a'
 # -------------------------------------------------------------
-# 薄桥接层：以下 14 个函数的函数体逐字复制自 kejilion-cn.sh linux_Settings
-# 对应 case 分支（原编号 6/7/10/11/12/18/19/22/24/26/28/31/32/34），未做改动
+# 薄桥接层：以下 15 个函数的函数体逐字复制自 kejilion-cn.sh linux_Settings
+# 对应 case 分支（原编号 6/7/10/11/12/18/19/22/24/26/28/31/32/34），未做改动；
+# 第 15 个 tb_kj_15 直接调用逐字 bbrv3 函数（设置BBR3加速）
 # TB_KJ_PIN=4.5.17
 # -------------------------------------------------------------
 
@@ -37475,6 +37477,9 @@ tb_kj_13() {
 tb_kj_14() {
 	linux_backup
 }
+tb_kj_15() {
+	bbrv3
+}
 case "$1" in
 	1) tb_kj_1 ;;
 	2) tb_kj_2 ;;
@@ -37490,9 +37495,11 @@ case "$1" in
 	12) tb_kj_12 ;;
 	13) tb_kj_13 ;;
 	14) tb_kj_14 ;;
+	15) tb_kj_15 ;;
 	*) echo "未知 kejilion 入口: $1" >&2; exit 2 ;;
 esac
 TB_KJ_BRIDGE_EOF_9f3a
+    printf '# TB_BUILD=%s\n' "$TB_VERSION" >> "$tmp"
     chmod 755 "$tmp"
     mv -f "$tmp" "$target"
 }
@@ -37530,7 +37537,8 @@ tb_ensure_lblib() {
     local lib target tmp
     lib="$(tb_lblib_path)"
     target="$(tb_lbbridge_path)"
-    if [[ -s "$lib" && -s "$target" ]] && grep -q "TB_LB_PIN=$TB_LB_PIN" "$target" 2>/dev/null; then
+    if [[ -s "$lib" && -s "$target" ]] && grep -q "TB_LB_PIN=$TB_LB_PIN" "$target" 2>/dev/null \
+        && grep -q "TB_BUILD=$TB_VERSION" "$target" 2>/dev/null; then
         return 0
     fi
     mkdir -p "$(dirname "$lib")" || return 1
@@ -37974,6 +37982,7 @@ case "$1" in
     *) echo "未知 linuxbox 入口: $1" >&2; exit 2 ;;
 esac
 TB_LB_BRIDGE_EOF_7c2d
+    printf '# TB_BUILD=%s\n' "$TB_VERSION" >> "$tmp"
     mv -f "$tmp" "$target"
 }
 
@@ -38153,6 +38162,7 @@ tb_feat_settings_menu() {
         echo "17. 安装 GOST 环境"
         echo "18. DD 重装系统"
         echo "19. 安装 BBRPlus"
+        echo "20. 设置BBR3加速"
         echo "------------------------"
         echo " 0. 返回主菜单"
         echo "------------------------"
@@ -38177,6 +38187,7 @@ tb_feat_settings_menu() {
             17) tb_lb 16 ;;
             18) tb_feat_dd_guard ;;
             19) tb_feat_bbrplus_guard ;;
+            20) tb_kj 15 ;;
             0)  return 0 ;;
             *)  tb_warn "无效输入"; sleep 1 ;;
         esac
@@ -38319,7 +38330,7 @@ tb_help() {
     lang      系统语言             ps1       命令行美化
     backup    备份与恢复           baseenv   基础环境安装
     gost      安装 GOST            dd        DD 重装系统
-    bbrplus   安装 BBRPlus
+    bbrplus   安装 BBRPlus          bbr3      设置 BBR3 加速
   $TB_CMD update           从 GitHub 更新到最新版（启动交互菜单时也会自动检查）
   $TB_CMD advanced         高级功能菜单（更新/卸载）
   $TB_CMD uninstall        卸载 ToolBox
@@ -38356,6 +38367,7 @@ tb_cli_dispatch() {
         gost)                 tb_lb 16 ;;
         dd|reinstall|重装)    tb_feat_dd_guard ;;
         bbrplus|bbr)          tb_feat_bbrplus_guard ;;
+        bbr3|bbrv3)           tb_kj 15 ;;
         install|安装)         tb_self_install ;;
         update|更新)          tb_self_update ;;
         advanced|高级)        tb_feat_advanced_menu ;;
